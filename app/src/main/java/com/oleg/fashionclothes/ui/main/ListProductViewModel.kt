@@ -1,47 +1,54 @@
 package com.oleg.fashionclothes.ui.main
 
-import android.arch.lifecycle.ViewModel
-import android.content.Context
+import android.app.Application
+import android.arch.lifecycle.AndroidViewModel
 import android.support.v7.widget.LinearLayoutManager
 import android.util.Log
 import com.oleg.fashionclothes.network.FashioClient
 import com.oleg.fashionclothes.network.module.Catalog
 import com.oleg.fashionclothes.network.module.Offer
 import com.oleg.fashionclothes.ui.adapter.FashionItemAdapter
+import com.oleg.fashionclothes.utils.withProgress
+import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
-import javax.inject.Inject
+import io.reactivex.subjects.PublishSubject
 
 /**
  * Created by oleg on 13.03.2018.
  */
 interface Activity{
-
+    val progress: Observable<Boolean>
 }
 
 interface ListLoadVM{
-
-    fun setLayoutManager(layoutManager: LinearLayoutManager)
-    // fun getAdapter(context: Context): FashionItemAdapter
+    fun getFashionItemAdapter(): FashionItemAdapter?
+    fun getLinearLayout(): LinearLayoutManager?
 }
 
-class ListProductViewModel @Inject constructor(private val fashionClient: FashioClient): ViewModel(), Activity, ListLoadVM {
-  //  override fun getAdapter(context: Context): FashionItemAdapter = FashionItemAdapter(context = context)
+class ListProductViewModel(application: Application,var fashionClient: FashioClient): AndroidViewModel(application), Activity, ListLoadVM {
 
-    private var linearLayoutManager: LinearLayoutManager? = null
 
-    override fun setLayoutManager(layoutManager: LinearLayoutManager) {
-        this.linearLayoutManager = linearLayoutManager
+    override val progress: PublishSubject<Boolean> = PublishSubject.create()
+    init {
+        getProduct()
     }
 
-     fun getProduct(context: Context){
-        Log.d("myLogs","тут")
+    private var adapter: FashionItemAdapter? = FashionItemAdapter(application.baseContext)
+    override fun getFashionItemAdapter(): FashionItemAdapter? = adapter
+
+
+    private var linearLayoutManager: LinearLayoutManager = LinearLayoutManager(application.baseContext)
+    override fun getLinearLayout(): LinearLayoutManager? = linearLayoutManager
+
+
+     fun getProduct(){
         fashionClient.getProduct()
-               .subscribeOn(Schedulers.io())
-               .observeOn(AndroidSchedulers.mainThread())
-                .map({t: Catalog -> t.shop?.offers?.offer })
-               .subscribe({
-                   t: List<Offer>? -> FashionItemAdapter(context = context, list = t!!)
-               })
+                .withProgress(progress)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .doOnNext({Log.d("myLogs","$adapter")})
+                .map {t: Catalog -> t.shop?.offers?.offer }
+                .subscribe({list: List<Offer>? -> adapter?.addListOffer(list!!)})
     }
 }

@@ -11,25 +11,39 @@ import com.oleg.fashionclothes.ui.adapter.holder.FashionItemHolder
 /**
  * Created by oleg on 14.03.2018.
  */
-class FashionItemAdapter(context:Context, list: List<Offer>): RecyclerView.Adapter<FashionItemHolder>() {
-    private var listOffer: List<Offer>? = null
+class FashionItemAdapter(context:Context): RecyclerView.Adapter<FashionItemHolder>() {
+    private  var listOffer: List<Offer>? = null
     private var mContext: Context? = null
 
     init {
-        listOffer = list
         mContext = context
     }
 
     override fun onCreateViewHolder(parent: ViewGroup?, viewType: Int): FashionItemHolder? {
         val v = LayoutInflater.from(parent?.context).inflate(R.layout.product_item,parent,false)
+
         return FashionItemHolder(v)
     }
 
-    override fun getItemCount(): Int = listOffer?.size!!
+    override fun getItemCount(): Int{
+        var res: Int = 0
+        if(listOffer != null){
+            res = listOffer!!.size
+        }
+        return res
+    }
 
     override fun onBindViewHolder(holder: FashionItemHolder?, position: Int) {
-        var offer: Offer = listOffer?.get(position)!!
+        var offer: Offer = listOffer!![position]
         holder?.bindItem(position = position, offer = offer)
 
     }
+
+
+    fun addListOffer(list: List<Offer>) {
+        listOffer = list
+        notifyDataSetChanged()
+    }
+
+
 }
