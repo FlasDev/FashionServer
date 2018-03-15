@@ -1,17 +1,16 @@
 package com.oleg.fashionclothes.ui.main
 
 
-import android.annotation.SuppressLint
 import android.arch.lifecycle.ViewModelProviders
 import android.os.Bundle
 import android.support.v4.app.Fragment
 import android.support.v7.widget.RecyclerView
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
+import com.jakewharton.rxbinding2.view.RxMenuItem
 import com.oleg.fashionclothes.R
-import com.oleg.fashionclothes.network.FashioClient
 import com.oleg.fashionclothes.ui.BaseFragment
+import com.trello.rxlifecycle2.android.FragmentEvent
+import io.reactivex.disposables.CompositeDisposable
 import kotlinx.android.synthetic.main.fragment_list_product.*
 import javax.inject.Inject
 
@@ -22,9 +21,13 @@ import javax.inject.Inject
 class ListProductFragment : BaseFragment() {
 
     @Inject
-    lateinit var fashioClient: FashioClient
+    lateinit var vmFactory: ListProductFactory
 
-   private lateinit var vm: ListLoadVM
+    private val vm: ListLoadVM by lazy{
+        ViewModelProviders.of(
+                this, vmFactory).get(ListProductViewModel::class.java)}
+
+    private var mCompositeDisposable: CompositeDisposable? = null
 
     override fun onCreateView(inflater: LayoutInflater,
             container: ViewGroup?,
@@ -35,20 +38,32 @@ class ListProductFragment : BaseFragment() {
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
-        vm = ViewModelProviders.of(this,ListProductFactory(application = activity?.application!!,fashionClient = fashioClient)).get(ListProductViewModel::class.java)
         initializeUserInterface()
+        setHasOptionsMenu(true)
     }
 
     private fun initializeUserInterface() {
         initRecyclerView(recycler_view)
     }
 
-    @SuppressLint("CheckResult")
     private fun initRecyclerView(recycler_view: RecyclerView?) {
-
         recycler_view?.layoutManager = vm.getLinearLayout()
         recycler_view?.adapter = vm.getFashionItemAdapter()
+        vm.setRecyclerViewItem()
+
 
     }
 
+    override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
+        inflater?.inflate(R.menu.list_product_menu,menu)
+        RxMenuItem.clicks(menu?.findItem(R.id.menu_download_data)!!)
+                .compose(bindUntilEvent(FragmentEvent.DESTROY))
+                .subscribe({vm.getProduct()})
+
+        RxMenuItem.clicks(menu.findItem(R.id.clear_db)!!)
+                .compose(bindUntilEvent(FragmentEvent.DESTROY))
+                .subscribe({vm.deleteAllProduct()})
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem?): Boolean = false
 }

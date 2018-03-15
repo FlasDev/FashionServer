@@ -4,8 +4,6 @@ import android.arch.lifecycle.ViewModelProviders
 import android.os.Bundle
 import android.util.Log
 import com.oleg.fashionclothes.R
-import com.oleg.fashionclothes.network.FashioClient
-
 import com.oleg.fashionclothes.ui.BaseActivity
 import com.oleg.fashionclothes.utils.hide
 import com.oleg.fashionclothes.utils.observeOnMainThread
@@ -18,16 +16,22 @@ import javax.inject.Inject
 class ListProductActivity : BaseActivity() {
 
     @Inject
-    lateinit var fashioClient: FashioClient
+    lateinit var vmFactory: ListProductFactory
 
-    private lateinit var vm: Activity
+    private val vm: Activity by lazy{
+        ViewModelProviders.of(
+                this, vmFactory).get(ListProductViewModel::class.java)}
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        vm = ViewModelProviders.of(this,ListProductFactory(application = application,fashionClient = fashioClient)).get(ListProductViewModel::class.java)
+
         setContentView(R.layout.activity_list_product)
+
         showFragment()
 
         vm.progress.bindToLifecycle(this).observeOnMainThread().subscribe({
+            Log.d("myLogs","vm.progress.bindToLifecycle(this).observeOnMainThr")
             if (it){
                 Log.d("myLogs","showProgress")
                 showProgress()
@@ -36,6 +40,7 @@ class ListProductActivity : BaseActivity() {
                 hideProgress()
             }
         })
+
 
     }
 

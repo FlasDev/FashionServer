@@ -1,11 +1,21 @@
 package com.oleg.fashionclothes.di.model
 
-import com.oleg.fashionclothes.network.NetworkModule
+import android.app.Application
+import android.arch.persistence.room.Room
+import com.oleg.fashionclothes.db.room.ProductDatabase
 import dagger.Module
+import dagger.Provides
+import javax.inject.Singleton
 
 /**
  * Created by oleg on 13.03.2018.
  */
-@Module(includes = [NetworkModule::class, ViewModelModule::class])
+@Module(includes = [ViewModelModule::class])
 class AppModule {
+
+    @Singleton
+    @Provides
+    fun provideDatabase(application: Application): ProductDatabase{
+        return Room.databaseBuilder(application,ProductDatabase::class.java,"fashiondatabase").build()
+    }
 }

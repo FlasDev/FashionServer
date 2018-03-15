@@ -1,6 +1,6 @@
 package com.oleg.fashionclothes.di.component
 
-import android.content.Context
+import android.app.Application
 import com.oleg.fashionclothes.App
 import com.oleg.fashionclothes.di.model.ActivityBuilder
 import com.oleg.fashionclothes.di.model.AppModule
@@ -22,7 +22,7 @@ interface AppComponent: AndroidInjector<App> {
     interface Builder{
         fun build(): AppComponent
         @BindsInstance
-        fun application(context: Context): Builder
+        fun application(application: Application): Builder
     }
 
 }

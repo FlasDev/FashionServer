@@ -2,20 +2,22 @@ package com.oleg.fashionclothes.ui.adapter
 
 import android.content.Context
 import android.support.v7.widget.RecyclerView
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import com.oleg.fashionclothes.R
-import com.oleg.fashionclothes.network.module.Offer
+import com.oleg.fashionclothes.db.room.Product
 import com.oleg.fashionclothes.ui.adapter.holder.FashionItemHolder
 
 /**
  * Created by oleg on 14.03.2018.
  */
 class FashionItemAdapter(context:Context): RecyclerView.Adapter<FashionItemHolder>() {
-    private  var listOffer: List<Offer>? = null
+    private  var listProduct: List<Product>? = null
     private var mContext: Context? = null
 
     init {
+        Log.d("myLogs","дися")
         mContext = context
     }
 
@@ -27,21 +29,27 @@ class FashionItemAdapter(context:Context): RecyclerView.Adapter<FashionItemHolde
 
     override fun getItemCount(): Int{
         var res: Int = 0
-        if(listOffer != null){
-            res = listOffer!!.size
+        if(listProduct != null){
+            res = listProduct!!.size
         }
         return res
     }
 
     override fun onBindViewHolder(holder: FashionItemHolder?, position: Int) {
-        var offer: Offer = listOffer!![position]
-        holder?.bindItem(position = position, offer = offer)
+        var offer: Product = listProduct!![position]
+        holder?.bindItem(offer = offer)
 
     }
 
 
-    fun addListOffer(list: List<Offer>) {
-        listOffer = list
+    fun addListProduct(list: List<Product>) {
+        Log.d("myLogs","addListProduct = ${list.size}")
+        listProduct = list
+        notifyDataSetChanged()
+    }
+
+    fun clearList(){
+        listProduct = null
         notifyDataSetChanged()
     }
 
