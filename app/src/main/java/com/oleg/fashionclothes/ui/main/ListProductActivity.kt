@@ -18,28 +18,18 @@ class ListProductActivity : BaseActivity() {
     @Inject
     lateinit var vmFactory: ListProductFactory
 
-    private val vm: Activity by lazy{
-        ViewModelProviders.of(
-                this, vmFactory).get(ListProductViewModel::class.java)}
 
+    private lateinit var vm: Activity
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
+        vm = ViewModelProviders.of(
+                this, vmFactory).get(ListProductViewModel::class.java)
         setContentView(R.layout.activity_list_product)
 
         showFragment()
 
-        vm.progress.bindToLifecycle(this).observeOnMainThread().subscribe({
-            Log.d("myLogs","vm.progress.bindToLifecycle(this).observeOnMainThr")
-            if (it){
-                Log.d("myLogs","showProgress")
-                showProgress()
-            }else{
-                Log.d("myLogs","hideProgress")
-                hideProgress()
-            }
-        })
+
 
 
     }
@@ -52,11 +42,4 @@ class ListProductActivity : BaseActivity() {
         }
     }
 
-    private fun showProgress() {
-        progress.show()
-    }
-
-    private fun hideProgress() {
-        progress.hide()
-    }
 }

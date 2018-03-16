@@ -5,4 +5,5 @@
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="download_data">Выгрузить данные</string>
     <string name="clear_database">Очистить БД</string>
+    <string name="save_to_server">Сохранить на сервер</string>
 </resources>

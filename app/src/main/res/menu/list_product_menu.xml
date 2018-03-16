@@ -10,5 +10,9 @@
         android:title="@string/clear_database"
         />
 
+    <item
+        android:title="@string/save_to_server"
+        android:id="@+id/menu_save_server"/>
+
 
 </menu>

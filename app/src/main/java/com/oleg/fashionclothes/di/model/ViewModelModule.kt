@@ -1,6 +1,7 @@
 package com.oleg.fashionclothes.di.model
 
 import android.app.Application
+import com.google.firebase.firestore.FirebaseFirestore
 import com.oleg.fashionclothes.db.room.ProductDatabase
 import com.oleg.fashionclothes.network.FashioClient
 import com.oleg.fashionclothes.network.NetworkModule
@@ -17,8 +18,13 @@ class ViewModelModule {
     @Provides
     fun provideListProductFactory(application: Application,
                                   fashionClient: FashioClient,
-                                  productDatabase: ProductDatabase
-    ): ListProductFactory = ListProductFactory(application = application, fashionClient = fashionClient,productDatabase = productDatabase)
+                                  productDatabase: ProductDatabase,
+                                  firebaseFirestore: FirebaseFirestore
+    ): ListProductFactory = ListProductFactory(
+            application = application,
+            fashionClient = fashionClient,
+            productDatabase = productDatabase,
+            firebaseFirestore = firebaseFirestore)
 
 
 }

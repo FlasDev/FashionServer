@@ -5,12 +5,16 @@ import android.arch.lifecycle.ViewModelProviders
 import android.os.Bundle
 import android.support.v4.app.Fragment
 import android.support.v7.widget.RecyclerView
+import android.util.Log
 import android.view.*
 import com.jakewharton.rxbinding2.view.RxMenuItem
 import com.oleg.fashionclothes.R
 import com.oleg.fashionclothes.ui.BaseFragment
+import com.oleg.fashionclothes.utils.hide
+import com.oleg.fashionclothes.utils.observeOnMainThread
+import com.oleg.fashionclothes.utils.show
 import com.trello.rxlifecycle2.android.FragmentEvent
-import io.reactivex.disposables.CompositeDisposable
+import com.trello.rxlifecycle2.android.lifecycle.kotlin.bindToLifecycle
 import kotlinx.android.synthetic.main.fragment_list_product.*
 import javax.inject.Inject
 
@@ -27,7 +31,6 @@ class ListProductFragment : BaseFragment() {
         ViewModelProviders.of(
                 this, vmFactory).get(ListProductViewModel::class.java)}
 
-    private var mCompositeDisposable: CompositeDisposable? = null
 
     override fun onCreateView(inflater: LayoutInflater,
             container: ViewGroup?,
@@ -40,6 +43,17 @@ class ListProductFragment : BaseFragment() {
         super.onActivityCreated(savedInstanceState)
         initializeUserInterface()
         setHasOptionsMenu(true)
+
+        vm.progress.bindToLifecycle(this).observeOnMainThread().subscribe({
+            Log.d("myLogs","vm.progress.bindToLifecycle(this).observeOnMainThr")
+            if (it){
+                Log.d("myLogs","showProgress")
+                showProgress()
+            }else{
+                Log.d("myLogs","hideProgress")
+                hideProgress()
+            }
+        })
     }
 
     private fun initializeUserInterface() {
@@ -50,7 +64,6 @@ class ListProductFragment : BaseFragment() {
         recycler_view?.layoutManager = vm.getLinearLayout()
         recycler_view?.adapter = vm.getFashionItemAdapter()
         vm.setRecyclerViewItem()
-
 
     }
 
@@ -63,7 +76,19 @@ class ListProductFragment : BaseFragment() {
         RxMenuItem.clicks(menu.findItem(R.id.clear_db)!!)
                 .compose(bindUntilEvent(FragmentEvent.DESTROY))
                 .subscribe({vm.deleteAllProduct()})
+
+        RxMenuItem.clicks(menu.findItem(R.id.menu_save_server)!!)
+                .compose(bindUntilEvent(FragmentEvent.DESTROY))
+                .subscribe({vm.saveToFireStore()})
     }
 
     override fun onOptionsItemSelected(item: MenuItem?): Boolean = false
+
+    private fun showProgress() {
+        progress.show()
+    }
+
+    private fun hideProgress() {
+        progress.hide()
+    }
 }

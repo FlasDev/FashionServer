@@ -3,46 +3,75 @@ package com.oleg.fashionclothes.ui.main
 import android.app.Application
 import android.arch.lifecycle.AndroidViewModel
 import android.support.v7.widget.LinearLayoutManager
-import android.util.Log
+import com.google.firebase.firestore.FirebaseFirestore
 import com.oleg.fashionclothes.db.room.Product
 import com.oleg.fashionclothes.db.room.ProductDatabase
 import com.oleg.fashionclothes.network.FashioClient
 import com.oleg.fashionclothes.network.module.Catalog
 import com.oleg.fashionclothes.ui.adapter.FashionItemAdapter
-import com.oleg.fashionclothes.utils.*
+import com.oleg.fashionclothes.utils.applySchedulers
+import com.oleg.fashionclothes.utils.offerToProduct
+import com.oleg.fashionclothes.utils.setListProduct
+import com.oleg.fashionclothes.utils.withProgress
+import io.reactivex.Flowable
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
-import io.reactivex.disposables.Disposable
-import io.reactivex.schedulers.Schedulers
 import io.reactivex.subjects.PublishSubject
-import java.util.concurrent.TimeUnit
-
 
 
 /**
  * Created by oleg on 13.03.2018.
  */
 interface Activity{
-    val progress: Observable<Boolean>
+
 }
 
 interface ListLoadVM{
+    val progress: Observable<Boolean>
     fun getFashionItemAdapter(): FashionItemAdapter?
     fun getLinearLayout(): LinearLayoutManager?
     fun getProduct()
     fun deleteAllProduct()
     fun setRecyclerViewItem()
+    fun saveToFireStore()
 }
+
 
 class ListProductViewModel(application: Application,
                            var fashionClient: FashioClient,
-                           var productDatabase: ProductDatabase
-): AndroidViewModel(application), Activity, ListLoadVM {
+                           var productDatabase: ProductDatabase,
+                           var firebaseFirestore: FirebaseFirestore
+): AndroidViewModel(application), Activity, ListLoadVM{
+    override fun saveToFireStore() {
+        mCompositeDisposable?.add(getAllFlowable
+                .withProgress(progress)
+                .subscribe({t: List<Product> ->
+                    Observable.fromIterable(t)
+                            .map({t: Product ->
+                                val products = HashMap<String, Any?>()
+                                products["type"] = t.type
+                                products["available"] = t.available
+                                products["selling_type"] = t.selling_type
+                                products["name"] = t.name
+                                products["description"] = t.description
+                                products["currencyId"] = t.currencyId
+                                products["categoryId"] = t.categoryId
+                                products["price"] = t.price
+                                products["picture"] = t.picture
+                                products["model"] = t.model
+                                products["color"] = t.color
+                                firebaseFirestore.collection("products")
+                                        .add(products!!)
+                            }).subscribe()
+                })
+
+
+        )
+    }
+
     private var mCompositeDisposable: CompositeDisposable? = null
-    private var disposableRecycler: Disposable? = null
-    private var disposableGetProduct: Disposable? = null
-    private var disposableDeleteProduct: Disposable? = null
+    private var getAllFlowable: Flowable<List<Product>> = productDatabase.productDao().getAll()
 
     init {
         mCompositeDisposable = CompositeDisposable()
@@ -50,25 +79,21 @@ class ListProductViewModel(application: Application,
 
 
     override fun setRecyclerViewItem() {
-        disposableRecycler = productDatabase.productDao().getAll()
-                .doOnNext({Log.d("myLogs","зашел чекать бд")})
+        mCompositeDisposable?.add(getAllFlowable
+                .withProgress(progress)
+                .observeOn(AndroidSchedulers.mainThread())
                 .filter({t -> t.isNotEmpty()})
-                .doOnNext({t->Log.d("myLogs","кол-во продуктов ${t.size}")})
                 .compose(setListProduct(adapter!!))
-                .subscribe()
+                .subscribe())
     }
 
 
     override fun deleteAllProduct() {
-        val productDao = productDatabase.productDao()
-       disposableDeleteProduct = productDao.getAll()
-               .withProgress(progress)
-               .doOnNext({t: List<Product>? -> productDao.deleteAll(t!!)})
-               .observeOn(AndroidSchedulers.mainThread())
-               .subscribe({adapter?.clearList()})
-
-        mCompositeDisposable?.addAll(disposableRecycler,disposableDeleteProduct)
-        mCompositeDisposable?.clear()
+        Observable.just("1")
+                .withProgress(progress)
+                .doOnNext({productDatabase.productDao().deleteAll()})
+                .applySchedulers()
+                .subscribe({adapter?.clearList()})
     }
 
 
@@ -85,29 +110,27 @@ class ListProductViewModel(application: Application,
 
      override fun getProduct(){
 
-         disposableGetProduct = fashionClient.getProduct()
+         mCompositeDisposable?.add(fashionClient.getProduct()
                  .withProgress(progress)
-                 .applySchedulers()
-                 .doOnNext({Log.d("myLogs","начал выгружать данные из сети")})
                  .map({t: Catalog -> t.shop?.offers?.offer })
-                 .subscribe({list -> Observable.fromIterable(list)
-                         .subscribeOn(Schedulers.io())
-                         .compose(offerToProduct())
-                         .compose(loadToRoom(productDatabase = productDatabase))
-                         .debounce(1,TimeUnit.SECONDS)
-                         .subscribe({
-                             productDatabase.productDao().getAll()
-                                     .compose(setListProduct(adapter!!))
-                                     .subscribe()
-                         })
-                 })
-         mCompositeDisposable?.addAll(disposableGetProduct,disposableRecycler)
-         mCompositeDisposable?.clear()
+                 .compose(offerToProduct())
+                 .doOnNext({t: Product? ->  productDatabase.productDao().insert(t)})
+                 .applySchedulers()
+                 .subscribe())
+
 
     }
 
-
+    override fun onCleared() {
+        super.onCleared()
+        mCompositeDisposable?.clear()
+    }
 }
+
+
+
+
+
 
 
 

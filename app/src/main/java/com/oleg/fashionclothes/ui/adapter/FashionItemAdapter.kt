@@ -43,7 +43,6 @@ class FashionItemAdapter(context:Context): RecyclerView.Adapter<FashionItemHolde
 
 
     fun addListProduct(list: List<Product>) {
-        Log.d("myLogs","addListProduct = ${list.size}")
         listProduct = list
         notifyDataSetChanged()
     }

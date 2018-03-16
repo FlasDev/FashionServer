@@ -1,7 +1,6 @@
 package com.oleg.fashionclothes.utils
 
 import com.oleg.fashionclothes.db.room.Product
-import com.oleg.fashionclothes.db.room.ProductDatabase
 import com.oleg.fashionclothes.network.module.Offer
 import com.oleg.fashionclothes.ui.adapter.FashionItemAdapter
 import io.reactivex.Flowable
@@ -21,6 +20,9 @@ fun <T> Observable<T>.observeOnMainThread(): Observable<T>
 
 fun <T> Observable<T>.applySchedulers(): Observable<T>
     = subscribeOn(Schedulers.io()).observeOnMainThread()
+
+fun <T> Flowable<T>.applySchedulers(): Flowable<T>
+        = subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread())
 
 fun <T> Observable<T>.withProgress(
         progressSubject: PublishSubject<Boolean>): Observable<T> {
@@ -47,12 +49,12 @@ fun <T> Flowable<T>.withProgress(
 }
 
 
-fun offerToProduct(): ObservableTransformer<Offer,Product>{
+fun offerToProduct(): ObservableTransformer<List<Offer>?,Product>{
 
     return ObservableTransformer { upstream ->
-        upstream.map ({offer: Offer ->
-            Product(
-                    type = offer.type,
+        upstream.flatMapIterable({offer: List<Offer> -> offer.map {
+            offer->
+            Product(type = offer.type,
                     available = offer.available,
                     selling_type = offer.selling_type,
                     name = offer.name,
@@ -64,22 +66,15 @@ fun offerToProduct(): ObservableTransformer<Offer,Product>{
                     model = offer.model,
                     color = offer.color
             )
+        }
+
         })
     }
 }
-fun loadToRoom(productDatabase: ProductDatabase): ObservableTransformer<Product,Product> {
-    return ObservableTransformer { upstream ->
-        upstream.doOnNext({
-            product: Product? ->
-                productDatabase.productDao().insertList(product = product)
-        })
 
-    }
-}
-
-fun setListProduct(adapter: FashionItemAdapter): FlowableTransformer<List<Product>,List<Product>>{
+fun setListProduct(adapter: FashionItemAdapter): FlowableTransformer<List<Product>,List<Product>?>{
     return FlowableTransformer { upstream ->
-        upstream.observeOn(AndroidSchedulers.mainThread())
+        upstream
                 .doOnNext({
             t: List<Product>? -> adapter.addListProduct(t!!)
         }
@@ -87,6 +82,13 @@ fun setListProduct(adapter: FashionItemAdapter): FlowableTransformer<List<Produc
         )
     }
 }
+
+
+
+
+
+
+
 
 
 
